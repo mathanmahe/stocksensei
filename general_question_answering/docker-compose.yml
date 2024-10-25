@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+    networks:
+      - stock_network
+
+  stock_app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_URI=mongodb://admin:adminpassword@mongodb:27017/
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+    networks:
+      - stock_network
+    # Enable TTY and stdin_open for interactive use
+    tty: true
+    stdin_open: true
+
+volumes:
+  mongodb_data:
+
+networks:
+  stock_network:
+    driver: bridge
