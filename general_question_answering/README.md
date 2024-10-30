@@ -242,8 +242,14 @@ stock_app:
     - ./logs:/app/logs
     - ./data:/data:rw
 ```
+### 3. Stop the containers: 
+```docker-compose down```
 
-### 3. Load Data into MongoDB
+### 4. Rebuild the containers:
+```docker-compose up --build -d```
+
+
+### 5. Load Data into MongoDB
 Run the following command to load SEC filings into MongoDB:
 
 ```
