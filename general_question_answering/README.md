@@ -273,27 +273,31 @@ Example MetaData:
 This dataset contains structured JSON files representing the annual 10-K filings of companies in the NASDAQ-100 index over five years (2020-2024). Each JSON file corresponds to a single 10-K filing, providing both qualitative and quantitative information about each company's business, financial health, and operational risks.
 
 Content Overview
+
+
 Each JSON file includes the following main sections, structured as keys:
-Item 1. Business
-Item 1A. Risk Factors
-Item 1B. Unresolved Staff Comments
-Item 2. Properties
-Item 3. Legal Proceedings
-Item 4. Mine Safety Disclosures
-Item 5. Market for Registrant’s Common Equity, Related Stockholder Matters and Issuer Purchases of Equity Securities
-Item 6. Selected Financial Data
-Item 7. Management’s Discussion and Analysis of Financial Condition and Results of Operations
-Item 7A. Quantitative and Qualitative Disclosures About Market Risk
-Item 8. Financial Statements and Supplementary Data
-Item 9. Changes in and Disagreements With Accountants on Accounting and Financial Disclosure
-Item 9A. Controls and Procedures
-Item 10. Directors and Executive Officers of the Registrant
-Item 11. Executive Compensation
-Item 12. Security Ownership of Certain Beneficial Owners and Management
-Item 13. Certain Relationships and Related Transactions
-Item 14. Principal Accountant Fees and Services
-Item 15. Exhibits, Financial Statement Schedules
-Item 16. Form 10-K Summary
+
+
+Item 1. Business  
+Item 1A. Risk Factors  
+Item 1B. Unresolved Staff Comments   
+Item 2. Properties   
+Item 3. Legal Proceedings    
+Item 4. Mine Safety Disclosures   
+Item 5. Market for Registrant’s Common Equity, Related Stockholder Matters and Issuer Purchases of Equity Securities   
+Item 6. Selected Financial Data   
+Item 7. Management’s Discussion and Analysis of Financial Condition and Results of Operations   
+Item 7A. Quantitative and Qualitative Disclosures About Market Risk   
+Item 8. Financial Statements and Supplementary Data   
+Item 9. Changes in and Disagreements With Accountants on Accounting and Financial Disclosure   
+Item 9A. Controls and Procedures   
+Item 10. Directors and Executive Officers of the Registrant   
+Item 11. Executive Compensation   
+Item 12. Security Ownership of Certain Beneficial Owners and Management   
+Item 13. Certain Relationships and Related Transactions   
+Item 14. Principal Accountant Fees and Services   
+Item 15. Exhibits, Financial Statement Schedules   
+Item 16. Form 10-K Summary   
 
 Here is an example of what the data file might look like. 
 
