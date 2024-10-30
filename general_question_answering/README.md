@@ -217,6 +217,8 @@ Here’s a short `README.md` file based on your steps:
 
 This guide provides instructions for loading SEC filings data into MongoDB within the `stock_app` container.
 
+The SEC-filings textual data is contained in the `./general_question_answering/data` folder:
+
 ## Steps
 
 ### 1. Set Permissions for the Data Folder
