@@ -8,6 +8,7 @@ import gradio as gr
 from dotenv import load_dotenv
 import pandas as pd
 from decimal import Decimal
+from pymongo import MongoClient
 
 @dataclass
 class ComprehensiveStockInfo:
@@ -73,17 +74,22 @@ class ComprehensiveStockInfo:
     held_percent_institutions: Optional[float] = None
     short_ratio: Optional[float] = None
     short_percent_of_float: Optional[float] = None
+    
+    # SEC Filings
+    sec_filings: Optional[List[Dict[str, Any]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert all non-None values to a dictionary."""
         return {k: v for k, v in self.__dict__.items() if v is not None}
 
 class StockAnalyzer:
-    def __init__(self, api_key: str):
-        """Initialize the StockAnalyzer with Gemini API key."""
+    def __init__(self, api_key: str, mongodb_uri: str):
+        """Initialize the StockAnalyzer with Gemini API key and MongoDB connection."""
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
-    
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.mongo_client = MongoClient(mongodb_uri)
+        self.sec_db = self.mongo_client.sec_data
+
     def _safe_get(self, info: Dict[str, Any], key: str, default: Any = None) -> Any:
         """Safely get a value from the info dictionary."""
         try:
@@ -92,18 +98,43 @@ class StockAnalyzer:
         except:
             return default
 
+    def get_sec_filings(self, ticker: str) -> List[Dict[str, Any]]:
+        """Fetch SEC filings data from MongoDB for a given ticker."""
+        filings_collection = self.sec_db.filings
+        filings = list(filings_collection.find(
+            {"stock_ticker": ticker},
+            {
+                "filing_type": 1,
+                "filing_date": 1,
+                "company": 1,
+                "filing_description": 1,
+                "item_1": 1,
+                "item_2": 1,
+                "item_3": 1,
+                "item_4": 1,
+                "item_5": 1,
+                "item_6": 1,
+                "item_7": 1,
+                "item_8": 1,
+                "item_9": 1,
+                "item_10": 1,
+                "item_11": 1,
+                "item_12": 1,
+                "item_13": 1,
+                "item_14": 1,
+                "item_15": 1,
+                "_id": 0
+            }
+        ).sort("filing_date", -1).limit(1))
+        return filings
+
     def get_stock_data(self, symbol: str) -> ComprehensiveStockInfo:
-        """Fetch comprehensive stock data using yfinance."""
+        """Fetch comprehensive stock data using yfinance and SEC filings."""
         stock = yf.Ticker(symbol)
         info = stock.info
         
-        # Historical price data
-        hist = stock.history(period="1y")
-        
-        # Financial statements
-        balance_sheet = stock.balance_sheet
-        income_stmt = stock.income_stmt
-        cash_flow = stock.cashflow
+        # Fetch SEC filings
+        sec_filings = self.get_sec_filings(symbol)
         
         stock_info = ComprehensiveStockInfo(
             symbol=symbol,
@@ -112,8 +143,6 @@ class StockAnalyzer:
             industry=self._safe_get(info, 'industry'),
             country=self._safe_get(info, 'country'),
             website=self._safe_get(info, 'website'),
-            
-            # Price Information
             current_price=self._safe_get(info, 'currentPrice'),
             previous_close=self._safe_get(info, 'previousClose'),
             open_price=self._safe_get(info, 'open'),
@@ -121,31 +150,21 @@ class StockAnalyzer:
             day_high=self._safe_get(info, 'dayHigh'),
             fifty_two_week_low=self._safe_get(info, 'fiftyTwoWeekLow'),
             fifty_two_week_high=self._safe_get(info, 'fiftyTwoWeekHigh'),
-            
-            # Trading Information
             volume=self._safe_get(info, 'volume'),
             avg_volume=self._safe_get(info, 'averageVolume'),
             avg_volume_10d=self._safe_get(info, 'averageVolume10days'),
             avg_volume_3m=self._safe_get(info, 'averageVolume3month'),
-            
-            # Market Metrics
             market_cap=self._safe_get(info, 'marketCap'),
             enterprise_value=self._safe_get(info, 'enterpriseValue'),
             beta=self._safe_get(info, 'beta'),
-            
-            # Financial Ratios
             pe_ratio=self._safe_get(info, 'trailingPE'),
             forward_pe=self._safe_get(info, 'forwardPE'),
             peg_ratio=self._safe_get(info, 'pegRatio'),
             price_to_book=self._safe_get(info, 'priceToBook'),
             price_to_sales=self._safe_get(info, 'priceToSalesTrailing12Months'),
-            
-            # Dividend Information
             dividend_rate=self._safe_get(info, 'dividendRate'),
             dividend_yield=self._safe_get(info, 'dividendYield'),
             ex_dividend_date=self._safe_get(info, 'exDividendDate'),
-            
-            # Financial Metrics
             revenue=self._safe_get(info, 'totalRevenue'),
             revenue_per_share=self._safe_get(info, 'revenuePerShare'),
             revenue_growth=self._safe_get(info, 'revenueGrowth'),
@@ -153,20 +172,17 @@ class StockAnalyzer:
             ebitda=self._safe_get(info, 'ebitda'),
             net_income=self._safe_get(info, 'netIncomeToCommon'),
             earnings_growth=self._safe_get(info, 'earningsGrowth'),
-            
-            # Balance Sheet Metrics
             total_cash=self._safe_get(info, 'totalCash'),
             total_debt=self._safe_get(info, 'totalDebt'),
             total_assets=self._safe_get(info, 'totalAssets'),
-            total_liabilities=self._safe_get(info, 'totalDebt'),  # Using totalDebt as proxy
-            
-            # Additional Metrics
+            total_liabilities=self._safe_get(info, 'totalDebt'),
             shares_outstanding=self._safe_get(info, 'sharesOutstanding'),
             float_shares=self._safe_get(info, 'floatShares'),
             held_percent_insiders=self._safe_get(info, 'heldPercentInsiders'),
             held_percent_institutions=self._safe_get(info, 'heldPercentInstitutions'),
             short_ratio=self._safe_get(info, 'shortRatio'),
-            short_percent_of_float=self._safe_get(info, 'shortPercentOfFloat')
+            short_percent_of_float=self._safe_get(info, 'shortPercentOfFloat'),
+            sec_filings=sec_filings
         )
         
         return stock_info
@@ -176,22 +192,21 @@ class StockAnalyzer:
         data_dict = stock_data.to_dict()
         context_parts = []
         
-        # Group the data into categories
         categories = {
             "Company Information": ["company_name", "sector", "industry", "country", "website"],
-            "Price Information": ["current_price", "previous_close", "open_price", "day_low", "day_high", 
+            "Price Information": ["current_price", "previous_close", "open_price", "day_low", "day_high",
                                 "fifty_two_week_low", "fifty_two_week_high"],
             "Trading Information": ["volume", "avg_volume", "avg_volume_10d", "avg_volume_3m"],
             "Market Metrics": ["market_cap", "enterprise_value", "beta"],
             "Financial Ratios": ["pe_ratio", "forward_pe", "peg_ratio", "price_to_book", "price_to_sales"],
             "Dividend Information": ["dividend_rate", "dividend_yield", "ex_dividend_date"],
-            "Financial Metrics": ["revenue", "revenue_per_share", "revenue_growth", "gross_profits", 
+            "Financial Metrics": ["revenue", "revenue_per_share", "revenue_growth", "gross_profits",
                                 "ebitda", "net_income", "earnings_growth"],
             "Balance Sheet": ["total_cash", "total_debt", "total_assets", "total_liabilities"],
-            "Ownership & Float": ["shares_outstanding", "float_shares", "held_percent_insiders", 
+            "Ownership & Float": ["shares_outstanding", "float_shares", "held_percent_insiders",
                                 "held_percent_institutions", "short_ratio", "short_percent_of_float"]
         }
-        
+
         for category, fields in categories.items():
             category_data = {k: data_dict[k] for k in fields if k in data_dict}
             if category_data:
@@ -211,6 +226,26 @@ class StockAnalyzer:
                         formatted_value = str(value)
                     context_parts.append(f"- {formatted_key}: {formatted_value}")
         
+        # Add SEC Filings section
+        if hasattr(stock_data, 'sec_filings') and stock_data.sec_filings:
+            context_parts.append("\nRecent SEC Filings:")
+            for filing in stock_data.sec_filings:
+                filing_date = filing.get('filing_date', 'N/A')
+                filing_type = filing.get('filing_type', 'N/A')
+                filing_desc = filing.get('filing_description', 'N/A')
+                
+                # Add the main filing information
+                context_parts.append(f"- {filing_date}: {filing_type} - {filing_desc}")
+                
+                # Add items 1-15 on separate lines if they exist
+                for i in range(1, 16):
+                    item_key = f'item_{i}'
+                    if filing.get(item_key):
+                        context_parts.append(f"  • Item {i}: {filing[item_key]}")
+                
+                # Add a blank line between filings for better readability
+                context_parts.append("")
+
         return "\n".join(context_parts)
 
     async def ask_about_stock(self, question: str, symbol: str) -> str:
@@ -266,20 +301,87 @@ class StockQAApp:
         """Initialize the Stock Q&A Application."""
         load_dotenv()
         api_key = os.getenv('GEMINI_API_KEY')
+        mongodb_uri = os.getenv('MONGODB_URI')
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
-        self.analyzer = StockAnalyzer(api_key)
+        if not mongodb_uri:
+            raise ValueError("MONGODB_URI not found in environment variables")
+        self.analyzer = StockAnalyzer(api_key, mongodb_uri)
 
     def run(self):
         """Run the interactive Q&A session with Gradio UI."""
-        interface = gr.Interface(
-            fn=self.ask_stock_question,  
-            inputs=["text", "text"],  
-            outputs="text",  
-            title="Stock Q&A Application",
-            description="Ask questions about stocks."
+        with gr.Blocks(theme=gr.themes.Soft()) as interface:
+            gr.Markdown(
+                """
+                # StockSensei: AI-Powered Stock Analysis
+                Get detailed insights about any stock including financial metrics, SEC filings, and more.
+                """
+            )
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    symbol_input = gr.Textbox(
+                        label="Stock Symbol",
+                        placeholder="e.g., AAPL",
+                        lines=1
+                    )
+                with gr.Column(scale=2):
+                    question_input = gr.Textbox(
+                        label="Your Question",
+                        placeholder="What would you like to know about this stock?",
+                        lines=2
+                    )
+            
+            with gr.Row():
+                analyze_btn = gr.Button("Analyze", variant="primary")
+                clear_btn = gr.Button("Clear")
+            
+            output = gr.Markdown(
+                label="Analysis",
+                value="Your analysis will appear here...",
+            )
+            
+            gr.Examples(
+                examples=[
+                    ["AAPL", "What's the company's financial health based on recent SEC filings and metrics?"],
+                    ["MSFT", "How does the current valuation look considering all ratios?"],
+                    ["GOOGL", "What's the institutional ownership and recent SEC filing trends?"],
+                    ["AMZN", "Analyze the company's profitability, growth, and recent 10-K highlights"],
+                ],
+                inputs=[symbol_input, question_input],
+            )
+
+            def clear_outputs():
+                return {
+                    symbol_input: "",
+                    question_input: "",
+                    output: "Your analysis will appear here..."
+                }
+
+            async def analyze(symbol: str, question: str) -> str:
+                try:
+                    result = await self.analyzer.ask_about_stock(question, symbol)
+                    return f"### Analysis for {symbol.upper()}\n\n{result}"
+                except Exception as e:
+                    return f"Error analyzing {symbol.upper()}: {str(e)}"
+
+            analyze_btn.click(
+                fn=analyze,
+                inputs=[symbol_input, question_input],
+                outputs=output
+            )
+            
+            clear_btn.click(
+                fn=clear_outputs,
+                inputs=[],
+                outputs=[symbol_input, question_input, output]
+            )
+
+        interface.launch(
+            share=False,
+            server_name="0.0.0.0",
+            server_port=7860
         )
-        interface.launch()  # Launch the Gradio app
 
     def ask_stock_question(self, symbol: str, question: str) -> str:
         """Handle stock question input from Gradio."""

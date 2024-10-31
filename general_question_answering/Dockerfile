@@ -1,8 +1,8 @@
 # Use python base image
 # For Apple Silicon (ARM):
-    #FROM python:3.9-slim
+    FROM python:3.9-slim
     # For AMD64 (Intel/AMD), comment above and uncomment below:
-    FROM amd64/python:3.9-slim
+    #FROM amd64/python:3.9-slim
     
     # Set working directory
     WORKDIR /app
