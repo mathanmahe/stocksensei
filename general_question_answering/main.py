@@ -4,6 +4,7 @@ import google.generativeai as genai
 from datetime import datetime
 import yfinance as yf
 import os
+import gradio as gr 
 from dotenv import load_dotenv
 import pandas as pd
 from decimal import Decimal
@@ -227,6 +228,39 @@ class StockAnalyzer:
         response = self.model.generate_content(prompt)
         return response.text
 
+# class StockQAApp:
+#     def __init__(self):
+#         """Initialize the Stock Q&A Application."""
+#         load_dotenv()
+#         api_key = os.getenv('GEMINI_API_KEY')
+#         if not api_key:
+#             raise ValueError("GEMINI_API_KEY not found in environment variables")
+#         self.analyzer = StockAnalyzer(api_key)
+    
+#     async def run(self):
+#         """Run the interactive Q&A session."""
+#         print("Welcome to the Enhanced Stock Q&A!")
+#         print("Enter 'quit' to exit")
+#         print("\nExample questions:")
+#         print("- What's the company's financial health based on these metrics?")
+#         print("- How does the current valuation look considering all ratios?")
+#         print("- What's the institutional ownership and short interest situation?")
+#         print("- How's the company's profitability and growth?")
+        
+#         while True:
+#             symbol = input("\nEnter stock symbol: ").upper()
+#             if symbol.lower() == 'quit':
+#                 break
+                
+#             question = input("What would you like to know about this stock? ")
+#             if question.lower() == 'quit':
+#                 break
+            
+#             try:
+#                 answer = await self.analyzer.ask_about_stock(question, symbol)
+#                 print("\nAnalysis:", answer)
+#             except Exception as e:
+#                 print(f"Error: {str(e)}")
 class StockQAApp:
     def __init__(self):
         """Initialize the Stock Q&A Application."""
@@ -235,36 +269,30 @@ class StockQAApp:
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
         self.analyzer = StockAnalyzer(api_key)
-    
-    async def run(self):
-        """Run the interactive Q&A session."""
-        print("Welcome to the Enhanced Stock Q&A!")
-        print("Enter 'quit' to exit")
-        print("\nExample questions:")
-        print("- What's the company's financial health based on these metrics?")
-        print("- How does the current valuation look considering all ratios?")
-        print("- What's the institutional ownership and short interest situation?")
-        print("- How's the company's profitability and growth?")
-        
-        while True:
-            symbol = input("\nEnter stock symbol: ").upper()
-            if symbol.lower() == 'quit':
-                break
-                
-            question = input("What would you like to know about this stock? ")
-            if question.lower() == 'quit':
-                break
-            
-            try:
-                answer = await self.analyzer.ask_about_stock(question, symbol)
-                print("\nAnalysis:", answer)
-            except Exception as e:
-                print(f"Error: {str(e)}")
+
+    def run(self):
+        """Run the interactive Q&A session with Gradio UI."""
+        interface = gr.Interface(
+            fn=self.ask_stock_question,  
+            inputs=["text", "text"],  
+            outputs="text",  
+            title="Stock Q&A Application",
+            description="Ask questions about stocks."
+        )
+        interface.launch()  # Launch the Gradio app
+
+    def ask_stock_question(self, symbol: str, question: str) -> str:
+        """Handle stock question input from Gradio."""
+        try:
+            answer = asyncio.run(self.analyzer.ask_about_stock(question, symbol))
+            return answer
+        except Exception as e:
+            return f"Error: {str(e)}"
 
 async def main():
     """Main entry point for the application."""
     app = StockQAApp()
-    await app.run()
+    app.run()  
 
 if __name__ == "__main__":
     import asyncio

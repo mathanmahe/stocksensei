@@ -26,6 +26,8 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./data:/data:rw
+    ports:
+      - "7860:7860"  # Map host port 7860 to container port 7860 for Gradio
     depends_on:
       - mongodb
     networks:
