@@ -4,6 +4,7 @@ import google.generativeai as genai
 from datetime import datetime
 import yfinance as yf
 import os
+import gradio as gr 
 from dotenv import load_dotenv
 import pandas as pd
 from decimal import Decimal
@@ -262,50 +263,140 @@ class StockAnalyzer:
         response = self.model.generate_content(prompt)
         return response.text
 
+# class StockQAApp:
+#     def __init__(self):
+#         """Initialize the Stock Q&A Application."""
+#         load_dotenv()
+#         api_key = os.getenv('GEMINI_API_KEY')
+#         if not api_key:
+#             raise ValueError("GEMINI_API_KEY not found in environment variables")
+#         self.analyzer = StockAnalyzer(api_key)
+    
+#     async def run(self):
+#         """Run the interactive Q&A session."""
+#         print("Welcome to the Enhanced Stock Q&A!")
+#         print("Enter 'quit' to exit")
+#         print("\nExample questions:")
+#         print("- What's the company's financial health based on these metrics?")
+#         print("- How does the current valuation look considering all ratios?")
+#         print("- What's the institutional ownership and short interest situation?")
+#         print("- How's the company's profitability and growth?")
+        
+#         while True:
+#             symbol = input("\nEnter stock symbol: ").upper()
+#             if symbol.lower() == 'quit':
+#                 break
+                
+#             question = input("What would you like to know about this stock? ")
+#             if question.lower() == 'quit':
+#                 break
+            
+#             try:
+#                 answer = await self.analyzer.ask_about_stock(question, symbol)
+#                 print("\nAnalysis:", answer)
+#             except Exception as e:
+#                 print(f"Error: {str(e)}")
 class StockQAApp:
     def __init__(self):
         """Initialize the Stock Q&A Application."""
         load_dotenv()
         api_key = os.getenv('GEMINI_API_KEY')
         mongodb_uri = os.getenv('MONGODB_URI')
-        
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
         if not mongodb_uri:
             raise ValueError("MONGODB_URI not found in environment variables")
-            
+
         self.analyzer = StockAnalyzer(api_key, mongodb_uri)
 
-    async def run(self):
-        """Run the interactive Q&A session."""
-        print("Welcome to the Enhanced Stock Q&A!")
-        print("Enter 'quit' to exit")
-        print("\nExample questions:")
-        print("- What's the company's financial health based on these metrics?")
-        print("- How does the current valuation look considering all ratios?")
-        print("- What's the institutional ownership and short interest situation?")
-        print("- How's the company's profitability and growth?")
-        print("- What recent SEC filings are available?")
+    def run(self):
+        """Run the interactive Q&A session with Gradio UI."""
+        with gr.Blocks(theme=gr.themes.Soft()) as interface:
+            gr.Markdown(
+                """
+                # StockSensei: AI-Powered Stock Analysis
+                Get detailed insights about any stock including financial metrics, SEC filings, and more.
+                """
+            )
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    symbol_input = gr.Textbox(
+                        label="Stock Symbol",
+                        placeholder="e.g., AAPL",
+                        lines=1
+                    )
+                with gr.Column(scale=2):
+                    question_input = gr.Textbox(
+                        label="Your Question",
+                        placeholder="What would you like to know about this stock?",
+                        lines=2
+                    )
+            
+            with gr.Row():
+                analyze_btn = gr.Button("Analyze", variant="primary")
+                clear_btn = gr.Button("Clear")
+            
+            output = gr.Markdown(
+                label="Analysis",
+                value="Your analysis will appear here...",
+            )
+            
+            gr.Examples(
+                examples=[
+                    ["AAPL", "What's the company's financial health based on recent SEC filings and metrics?"],
+                    ["MSFT", "How does the current valuation look considering all ratios?"],
+                    ["GOOGL", "What's the institutional ownership and recent SEC filing trends?"],
+                    ["AMZN", "Analyze the company's profitability, growth, and recent 10-K highlights"],
+                ],
+                inputs=[symbol_input, question_input],
+            )
 
-        while True:
-            symbol = input("\nEnter stock symbol: ").upper()
-            if symbol.lower() == 'quit':
-                break
+            def clear_outputs():
+                return {
+                    symbol_input: "",
+                    question_input: "",
+                    output: "Your analysis will appear here..."
+                }
 
-            question = input("What would you like to know about this stock? ")
-            if question.lower() == 'quit':
-                break
+            async def analyze(symbol: str, question: str) -> str:
+                try:
+                    result = await self.analyzer.ask_about_stock(question, symbol)
+                    return f"### Analysis for {symbol.upper()}\n\n{result}"
+                except Exception as e:
+                    return f"Error analyzing {symbol.upper()}: {str(e)}"
 
-            try:
-                answer = await self.analyzer.ask_about_stock(question, symbol)
-                print("\nAnalysis:", answer)
-            except Exception as e:
-                print(f"Error: {str(e)}")
+            analyze_btn.click(
+                fn=analyze,
+                inputs=[symbol_input, question_input],
+                outputs=output
+            )
+            
+            clear_btn.click(
+                fn=clear_outputs,
+                inputs=[],
+                outputs=[symbol_input, question_input, output]
+            )
+
+        interface.launch(
+            share=False,
+            server_name="0.0.0.0",
+            server_port=7860
+        )
+
+    def ask_stock_question(self, symbol: str, question: str) -> str:
+        """Handle stock question input from Gradio."""
+        try:
+            answer = asyncio.run(self.analyzer.ask_about_stock(question, symbol))
+            return answer
+        except Exception as e:
+            return f"Error: {str(e)}"
+
 
 async def main():
     """Main entry point for the application."""
     app = StockQAApp()
-    await app.run()
+    app.run()  
 
 if __name__ == "__main__":
     import asyncio
