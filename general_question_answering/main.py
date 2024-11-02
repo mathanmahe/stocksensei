@@ -306,6 +306,7 @@ class StockQAApp:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
         if not mongodb_uri:
             raise ValueError("MONGODB_URI not found in environment variables")
+
         self.analyzer = StockAnalyzer(api_key, mongodb_uri)
 
     def run(self):
@@ -390,6 +391,7 @@ class StockQAApp:
             return answer
         except Exception as e:
             return f"Error: {str(e)}"
+
 
 async def main():
     """Main entry point for the application."""

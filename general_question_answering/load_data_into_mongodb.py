@@ -19,6 +19,7 @@ def load_sec_filings_to_mongo(folder_path: str, mongodb_uri: str, db_name: str =
     collection = db[collection_name]
     
     collection.create_index("filename", unique=True)
+    collection.create_index("stock_ticker")
     
     # Count total JSON files for progress tracking
     total_files = sum(1 for _, _, files in os.walk(folder_path) for file in files if file.endswith('.json'))
