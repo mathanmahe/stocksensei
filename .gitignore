@@ -3,3 +3,5 @@ env/
 evaluation/.env
 data/
 client_secret.json
+models/
+tmp/
