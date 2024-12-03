@@ -1,9 +1,23 @@
-# CS6220 Project
+# StockSensei: AI-Powered Financial Advisor
 
-## Pretraining samples
-Contains a sample jupyter notebook I used to train modes upto 7B params on a 24GB GPU. This can be used to create our own models.
+CS 6220, Group 25
 
-## General Question Answering Applications
-Uses Gemini and Yahoo Finance to get stock related information based on FACTUAL CONCRETE INFORMATION
+Georgia Institute of Technology
 
-[LINK TO QA README](https://github.gatech.edu/hdhillon30/cs6220-project/blob/main/general_question_answering/README.md)
+Fall 2024
+
+## Intro
+
+This ReadMe serves as a landing page for the subsections of our entire project. It will contains links to more resources to understand the source code, motivation, and results of the project. For more information on the project motivation.
+
+## Links to More Information
+
+[More information on project motivation](https://docs.google.com/presentation/d/1NT9Qs4ti-s4GDFC_2XLhspUwzSYErJ_w9rASwrcl3rQ/edit?usp=sharing)
+
+[More information on StockSensei Application](./general_question_answering/README.md)
+
+[More information on evaluation](./evaluation/README.md)
+
+[More information on results](https://docs.google.com/presentation/d/1g2gA1GKPQRnH1-bUfHatQFqQkllJdWV2MXaJEPwqoZ8/edit?usp=sharing)
+
+[Published ground truth and results](https://huggingface.co/datasets/iamwillferguson/StockSensei_Ground_Truth/blob/main/README.md)
